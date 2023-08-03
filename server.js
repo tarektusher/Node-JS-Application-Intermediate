@@ -1,20 +1,44 @@
 //? Package List
 const express = require('express');
 const bodyParser = require('body-parser');
-
+require('dotenv').config()
+const mongoose = require('mongoose');
 
 const app = express();
 app.use(bodyParser.json());
-const PORT = 3000;
+const PORT = process.env.PORT
 
-//? Create a object 
-let users = [];
+//? Create a object and id
+// let users = [];
 let cc=0;
+
+//?MongoDB Connect 
+const url = process.env.MONGODB_URI;
+mongoose.connect(url, {useNewUrlParser : true})
+  .then(() => console.log('Connected!'));
+
+mongoose.connection.on('connected',()=>{
+     console.log(`Mongoose default connection open`);
+});
+mongoose.connection.on('error',(err)=>{
+     console.log(`Mongoose default connection error`);
+});
+
+//? MongoDB Schema
+const Schema = mongoose.Schema;
+const objectId = Schema.ObjectId;
+const users = new Schema ({
+     fname : String,
+     lname : String,
+     email : String,
+     id : String,
+})
 
 //? API to check connection
 app.get('/',(req,res) =>{
      res.json({message: 'Welcome to my app'});
 })
+
 
 //? API to create a User
 app.post('/users',(req,res) => {

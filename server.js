@@ -3,6 +3,8 @@ const express = require('express');
 const bodyParser = require('body-parser');
 require('dotenv').config()
 const mongoose = require('mongoose');
+const bycript = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
 const app = express();
 app.use(bodyParser.json());
@@ -27,6 +29,7 @@ const userSchema = new mongoose.Schema(
      fname : String,
      lname : String,
      email : String,
+     password : String,
      age : Number
      },
      {
@@ -44,9 +47,47 @@ app.get('/',(req,res) =>{
 //? API to create a User
 app.post('/users',async (req,res) => {
      try {
-          const user = new User(req.body);
+          const salt =await bycript.genSalt(10);
+          const hash = await bycript.hash(req.body.password,salt);
+          const userObj = {
+               fname : req.body.fname,
+               lname : req.body.lname,
+               email : req.body.email,
+               password : hash,
+               age : req.body.age,
+
+          }
+          const user = new User(userObj);
           await user.save();
           res.status(201).json(user);
+     } catch (error) {
+          console.error(error);
+          res.status(500).json({message : `Something is worng in the server`});
+     }
+})
+
+//? API to LOG IN
+
+app.post('/users/login', async(req,res) =>{
+     try {
+          const {email , password} = req.body;
+          const user = await User.findOne({email : email});
+          if(!user){
+               res.status(401).json({message : `User is not found`});
+          }
+          else {
+               const validPassword = await bycript.compare(password , user.password);
+               if(!validPassword){
+                    res.status(401).json({message : `Wrong Password`});
+               }
+               else {
+                    const token = jwt.sign({email : user.email , id : user._id},'secret');
+                    const userObj = user.toJSON();
+                    userObj['accessToken'] = token;
+                    res.json(userObj);
+               }
+          }
+          
      } catch (error) {
           console.error(error);
           res.status(500).json({message : `Something is worng in the server`});

@@ -81,7 +81,7 @@ app.post('/users/login', async(req,res) =>{
                     res.status(401).json({message : `Wrong Password`});
                }
                else {
-                    const token = jwt.sign({email : user.email , id : user._id},'secret');
+                    const token = jwt.sign({email : user.email , id : user._id},process.env.JWT_Secret);
                     const userObj = user.toJSON();
                     userObj['accessToken'] = token;
                     res.json(userObj);
@@ -91,6 +91,43 @@ app.post('/users/login', async(req,res) =>{
      } catch (error) {
           console.error(error);
           res.status(500).json({message : `Something is worng in the server`});
+     }
+})
+
+//? Creating a Middleware to Authenticate JWT Access Token
+
+const authenticateToken = (req, res, next) =>{
+     const authHeader = req.headers.authorization;
+     const token = authHeader && authHeader.split(" ")[1];
+     if(!token){
+          res.status(401).json({message : `Unauthorized`});
+          return ;
+     }
+     else{
+          jwt.verify(token, process.env.JWT_Secret, (err,user) =>{
+               if(err){
+                    res.status(401).json({message : `Unauthorized`});
+               }
+               else{
+                    req.user = user;
+                    next();
+               }
+          })
+     }
+}
+//? get a user profile 
+app.get('/profile',authenticateToken,async(req,res) =>{
+     try {
+          const id =req.user.id;
+          const user = await User.findById(id);
+          if(user){
+               res.json(user);
+          }
+          else{
+               res.status(404).json({message:"User Not Found"});
+          }
+     } catch (error) {
+          res.status(500).json({message : `SomeThing wrong in Server`});
      }
 })
 
@@ -106,9 +143,9 @@ app.get('/users',async(req,res) =>{
 })
 
 //? API to get specfic user
-app.get('/users/:id',async (req,res)=>{
+app.get('/users',authenticateToken,async (req,res)=>{
      try {
-          const id =req.params.id;
+          const id =req.user.id;
           const user = await User.findById(id);
           if(user){
                res.json(user);
@@ -122,9 +159,9 @@ app.get('/users/:id',async (req,res)=>{
 })
 
 //? API to Update a user
-app.put('/users/:id',async(req,res) =>{
+app.put('/users',authenticateToken,async(req,res) =>{
      try {
-          const id = req.params.id;
+          const id = req.user.id;
           const body = req.body
           const user = await User.findByIdAndUpdate(id,body,{new : true});
           if(user){
@@ -139,9 +176,9 @@ app.put('/users/:id',async(req,res) =>{
 })
 
 //? API to DELETE a user
-app.delete('/users/:id',async(req,res) =>{
+app.delete('/users',authenticateToken,async(req,res) =>{
      try {
-          const id =req.params.id;
+          const id =req.user.id;
           const user = await User.findByIdAndDelete(id);
           if(user){
                res.status(200).json(user);

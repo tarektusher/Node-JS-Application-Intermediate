@@ -1,6 +1,6 @@
-npm i express --save
-npm i body-parser --save
-npm i nodemon --save
-npm i mongoose --save
-npm i bycriptjs --save
-npm i jsonwebtoken --save
+npm i express --save<br>
+npm i body-parser --save<br>
+npm i nodemon --save <br>
+npm i mongoose --save <br>
+npm i bycriptjs --save <br>
+npm i jsonwebtoken --save <br>
